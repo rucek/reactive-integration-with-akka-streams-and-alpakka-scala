@@ -4,8 +4,9 @@ import java.nio.file.Paths
 
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.stream.alpakka.csv.scaladsl.CsvParsing
 import akka.stream.alpakka.file.scaladsl.FileTailSource
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Flow, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
 import org.kunicki.reactive_integration.CsvImporter._
@@ -26,6 +27,8 @@ class CsvImporter {
   private implicit val materializer: Materializer = ActorMaterializer()
 
   val fileBytes: Source[ByteString, NotUsed] = FileTailSource(DataPath, 100, 0, 1 second)
+
+  val toModel: Flow[ByteString, Model, NotUsed] = CsvParsing.lineScanner().map(Model.apply)
 }
 
 object CsvImporter {
