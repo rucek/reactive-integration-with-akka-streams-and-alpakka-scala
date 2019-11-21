@@ -4,9 +4,11 @@ import java.nio.file.Paths
 
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.stream.alpakka.csv.scaladsl.CsvParsing
 import akka.stream.alpakka.file.scaladsl.FileTailSource
-import akka.stream.scaladsl.{Flow, Source}
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
 import org.kunicki.reactive_integration.CsvImporter._
@@ -29,6 +31,12 @@ class CsvImporter {
   val fileBytes: Source[ByteString, NotUsed] = FileTailSource(DataPath, 100, 0, 1 second)
 
   val toModel: Flow[ByteString, Model, NotUsed] = CsvParsing.lineScanner().map(Model.apply)
+
+  val httpSink: Sink[Model, NotUsed] =
+    Flow[Model]
+      .map(m => HttpRequest(method = HttpMethods.POST, uri = s"/${HttpServer.Endpoint}", entity = m.value))
+      .via(Http().outgoingConnection(HttpServer.Host, HttpServer.Port))
+      .to(Sink.ignore)
 }
 
 object CsvImporter {
