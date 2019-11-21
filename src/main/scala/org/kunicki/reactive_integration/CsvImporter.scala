@@ -71,4 +71,8 @@ object CsvImporter {
     val Port = 9042
     val InsertQuery = "insert into alpakka.test (id, value) values (now(), ?)"
   }
+
+  def main(args: Array[String]): Unit = {
+    new CsvImporter().run
+  }
 }
