@@ -58,6 +58,8 @@ class CsvImporter {
 
     SinkShape(partition.in)
   }
+
+  def run: NotUsed = fileBytes.via(toModel).runWith(partitioningSink)
 }
 
 object CsvImporter {
