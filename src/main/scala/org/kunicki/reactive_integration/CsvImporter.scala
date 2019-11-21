@@ -9,8 +9,8 @@ import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.stream.alpakka.cassandra.scaladsl.CassandraSink
 import akka.stream.alpakka.csv.scaladsl.CsvParsing
 import akka.stream.alpakka.file.scaladsl.FileTailSource
-import akka.stream.scaladsl.{Flow, Sink, Source}
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.scaladsl.{Flow, GraphDSL, Partition, Sink, Source}
+import akka.stream.{ActorMaterializer, Graph, Materializer, SinkShape}
 import akka.util.ByteString
 import com.datastax.driver.core.{BoundStatement, Cluster, PreparedStatement, Session}
 import org.kunicki.reactive_integration.CsvImporter._
@@ -46,6 +46,17 @@ class CsvImporter {
     val statementBinder = (m: Model, ps: PreparedStatement) => ps.bind(m.value)
 
     Flow[Model].to(CassandraSink(1, preparedStatement, statementBinder))
+  }
+
+  val partitioningSink: Graph[SinkShape[Model], NotUsed] = GraphDSL.create() { implicit builder =>
+    val partition = builder.add(Partition[Model](2, _.id % 2))
+
+    import GraphDSL.Implicits._
+
+    partition ~> cassandraSink
+    partition ~> httpSink
+
+    SinkShape(partition.in)
   }
 }
 
