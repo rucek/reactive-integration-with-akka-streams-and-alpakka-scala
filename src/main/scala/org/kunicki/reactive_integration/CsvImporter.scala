@@ -2,10 +2,15 @@ package org.kunicki.reactive_integration
 
 import java.nio.file.Paths
 
+import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.stream.alpakka.file.scaladsl.FileTailSource
+import akka.stream.scaladsl.Source
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.ByteString
+import org.kunicki.reactive_integration.CsvImporter._
 
+import scala.concurrent.duration._
 import scala.language.postfixOps
 
 case class Model(id: Int, value: String)
@@ -20,6 +25,7 @@ class CsvImporter {
   private implicit val system: ActorSystem = ActorSystem()
   private implicit val materializer: Materializer = ActorMaterializer()
 
+  val fileBytes: Source[ByteString, NotUsed] = FileTailSource(DataPath, 100, 0, 1 second)
 }
 
 object CsvImporter {
